@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Employee } from './entities/employee.entity';
 import { Payroll } from '../payroll/entities/payroll.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class EmployeesService {
   constructor(
+    @Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy,
+
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
 
@@ -27,6 +30,8 @@ export class EmployeesService {
         salary: dto.salary,
       });
       await manager.save(payroll);
+
+      this.client.emit('employee.created', employee);
 
       return employee;
     });
