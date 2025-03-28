@@ -1,34 +1,43 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Post()
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeesService.create(createEmployeeDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.employeesService.findAll();
+  async createEmployee(@Body() dto: CreateEmployeeDto) {
+    return this.employeesService.create(dto);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.employeesService.findOne(+id);
+  async getEmployee(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.getEmployeeById(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeesService.update(+id, updateEmployeeDto);
+  @Put(':id')
+  async updateEmployee(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: Partial<CreateEmployeeDto>,
+  ) {
+    return this.employeesService.updateEmployee(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.employeesService.remove(+id);
+  @HttpCode(HttpStatus.NO_CONTENT) // Respond with 204 No Content
+  async terminateEmployee(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.terminateEmployee(id);
   }
 }

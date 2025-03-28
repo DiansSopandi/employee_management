@@ -37,7 +37,7 @@ export class UsersService {
   }
 
   async register(newUserDto: CreateUserDto) {
-    return newUserDto;
+    return await this.create(newUserDto);
   }
 
   async findAll() {
