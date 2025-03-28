@@ -1,0 +1,37 @@
+http:
+    port: ${PORT}
+redis:
+    port: ${REDIS_PORT}
+    host: ${REDIS_HOST}
+database:
+    name: 'default'
+    type: ${DATABASE_TYPE}
+    host: ${DATABASE_HOST}
+    port: ${DATABASE_PORT}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    database: ${DATABASE_NAME}
+    entities: ["dist/**/*.entity.js"]
+    migrations: ['dist/migrations/mysql/*.js']
+    cli:
+      migrationsDir: 'src/migrations/mysql'
+    ssl: false
+    #   rejectUnauthorized: false
+    #   ca: 'dist/root.crt'
+    logging: false,
+    bigNumberStrings: false
+    timezone: +00:00
+    synchronize: true
+token:
+    secret: ${TOKEN_SECRET}
+    expiration: ${TOKEN_EXPIRED}
+    refresh_expiration: ${TOKEN_REFRESH_EXP}
+imagekit:
+    public: ${IMAGE_KIT_PUBLICKEY}
+    private: ${IMAGE_KIT_PRIVATEKEY}
+    endpoint: ${IMAGE_KIT_ENDPOINT}
+mpstore:
+    id: ${MPSTORE_ID}
+    username: ${MPSTORE_USERNAME}
+    password: ${MPSTORE_PASSWORD}
+    pin: ${MPSTORE_ID}
