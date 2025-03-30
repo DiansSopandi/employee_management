@@ -5,11 +5,12 @@ import { Employee } from './entities/employee.entity';
 import { Payroll } from '../payroll/entities/payroll.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ClientProxy } from '@nestjs/microservices';
+import { RabbitMQService } from '../rabbit-mq/rabbit-mq.service';
 
 @Injectable()
 export class EmployeesService {
   constructor(
-    @Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy,
+    // @Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy,
 
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
@@ -18,6 +19,7 @@ export class EmployeesService {
     private readonly payrollRepository: Repository<Payroll>,
 
     private readonly dataSource: DataSource,
+    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   async create(dto: CreateEmployeeDto) {
@@ -25,13 +27,24 @@ export class EmployeesService {
       const employee = manager.create(Employee, dto);
       await manager.save(employee);
 
+      const payload = {
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        position: employee.position,
+        salary: employee.salary,
+        isActive: employee.isActive,
+        createdAt: employee.createdAt.toISOString(), // ✅ Ensure date is serializable
+      };
+
       const payroll = manager.create(Payroll, {
         employeeId: employee.id,
         salary: dto.salary,
       });
       await manager.save(payroll);
 
-      this.client.emit('employee.created', employee);
+      // this.client.emit('employee.created', employee);
+      this.rabbitMQService.publishMessage('employee.created', employee);
 
       return employee;
     });

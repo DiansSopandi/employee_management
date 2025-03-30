@@ -11,6 +11,7 @@ import * as session from 'express-session';
 import * as passport from 'passport';
 import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -74,6 +75,18 @@ async function bootstrap() {
   app.use(passport.session());
 
   ApiDocs.setup(app, app.get(ConfigService));
+
+  // ✅ Start microservice for consuming RabbitMQ messages
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://admin:admin@localhost:5672'],
+      queue: 'employee_queue',
+      queueOptions: { durable: true },
+    },
+  });
+
+  await app.startAllMicroservices(); // ✅ Start microservices
   await app.listen(port);
   logger.log('Application running on port ' + port);
 }

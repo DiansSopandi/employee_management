@@ -36,7 +36,7 @@ export class EmployeesController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT) // Respond with 204 No Content
+  @HttpCode(HttpStatus.NO_CONTENT)
   async terminateEmployee(@Param('id', ParseIntPipe) id: number) {
     return this.employeesService.terminateEmployee(id);
   }

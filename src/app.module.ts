@@ -8,6 +8,8 @@ import { FeaturesModule } from './features/features.module';
 import { LoggerModule } from '@app/commons/logger/logger.modules';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './features/auth/guards/jwt-auth.guard';
+import { EmployeesModule } from './features/employees/employees.module';
+import { EmployeeConsumer } from './features/employees/employee.consumer';
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { JwtAuthGuard } from './features/auth/guards/jwt-auth.guard';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    EmployeeConsumer,
   ],
 })
 export class AppModule {}

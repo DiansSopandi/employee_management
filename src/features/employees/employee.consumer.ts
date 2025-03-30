@@ -1,10 +1,20 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import {
+  Ctx,
+  EventPattern,
+  MessagePattern,
+  Payload,
+  RmqContext,
+} from '@nestjs/microservices';
 
 @Controller()
 export class EmployeeConsumer {
-  @MessagePattern('employee.created')
-  async handleEmployeeCreated(@Payload() data: any) {
+  // @MessagePattern('employee.created')
+  @EventPattern('employee.created')
+  async handleEmployeeCreated(
+    @Payload() data: any,
+    @Ctx() context: RmqContext,
+  ) {
     console.log('Processing new employee:', data);
 
     await this.sendWelcomeEmail(data.email);
@@ -12,6 +22,10 @@ export class EmployeeConsumer {
     await this.syncWithPayroll(data);
 
     console.log('Employee processed successfully.');
+
+    const channel = context.getChannelRef();
+    const originalMsg = context.getMessage();
+    channel.ack(originalMsg); // 👈 Acknowledge message after processing
   }
 
   async sendWelcomeEmail(email: string) {

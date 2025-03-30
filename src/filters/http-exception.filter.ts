@@ -29,7 +29,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       );
       response.status(status).json({ success: false, message: errorResponse });
     } else {
-      this.logger.error(`Status: 500, Message: Internal Server Error`);
+      this.logger.error(exception.message);
       response.status(500).json({
         success: false,
         message: 'Internal Server Error',
