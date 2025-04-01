@@ -8,11 +8,12 @@ import { FeaturesModule } from './features/features.module';
 import { LoggerModule } from '@app/commons/logger/logger.modules';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './features/auth/guards/jwt-auth.guard';
-import { EmployeesModule } from './features/employees/employees.module';
 import { EmployeeConsumer } from './features/employees/employee.consumer';
+import { RedisCacheModule } from '@app/commons';
 
 @Module({
   imports: [
+    RedisCacheModule,
     ConfigModule.forRoot({
       envFilePath: '.env',
       expandVariables: true,

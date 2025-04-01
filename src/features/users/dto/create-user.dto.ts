@@ -6,7 +6,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { ROLES } from '@app/commons/constants/enum';
+import { ROLES } from '@app/commons/constants/enums';
 import { IsStrongPassword } from 'src/utils/decorators/password.decorator';
 
 export class CreateUserDto {

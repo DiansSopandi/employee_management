@@ -20,6 +20,7 @@ export class AuthService {
 
   async validateUser(loginDto: CreateAuthenticateDto) {
     const user = await this.usersService.findByEmail(loginDto);
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }

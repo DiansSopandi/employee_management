@@ -1,4 +1,9 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +17,7 @@ export class UsersService {
   constructor(
     @InjectRepository(UsersEntity)
     private readonly usersRepository: Repository<UsersEntity>,
+    private readonly logger: Logger,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -19,8 +25,18 @@ export class UsersService {
     const hashPassword = await PasswordUtils.hashPassword(password);
     const userWithHashPassword = {
       ...createUserDto,
+      email: createUserDto.email.toLowerCase(),
       password: hashPassword,
     };
+
+    const userExists = await this.usersRepository.findOneBy({
+      email: userWithHashPassword.email,
+    });
+
+    if (userExists) {
+      this.logger.error('User already exists', userExists.email);
+      throw new HttpException('User already exists', 400);
+    }
 
     return await this.usersRepository
       .save({ ...userWithHashPassword })
@@ -32,7 +48,8 @@ export class UsersService {
         };
       })
       .catch((err) => {
-        throw new HttpException(`Invalid data format ${err.stack}`, 400);
+        this.logger.error('Error creating user', err.message);
+        throw new HttpException(`Invalid data user format`, 400);
       });
   }
 
@@ -88,14 +105,15 @@ export class UsersService {
 
   async findByEmail(
     loginDto: CreateAuthenticateDto,
+    isRegister: boolean = false,
   ): Promise<UsersEntity | null> {
     const { email, password } = loginDto;
-    const user = await this.usersRepository.findOne({ where: { email } });
+    const user = await this.usersRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
 
-    if (!user) {
-      // throw new UnauthorizedException('Invalid credentials');
-      return null;
-    }
+    if (!user) return null;
+    if (isRegister) return user;
 
     const isPasswordValid = await PasswordUtils.comparePassword(
       password,

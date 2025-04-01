@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Employee } from './entities/employee.entity';
@@ -6,6 +6,7 @@ import { Payroll } from '../payroll/entities/payroll.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { RabbitMQService } from '../rabbit-mq/rabbit-mq.service';
+import { CacheService } from '@app/commons';
 
 @Injectable()
 export class EmployeesService {
@@ -20,6 +21,8 @@ export class EmployeesService {
 
     private readonly dataSource: DataSource,
     private readonly rabbitMQService: RabbitMQService,
+    private readonly cacheService: CacheService,
+    private readonly logger: Logger,
   ) {}
 
   async create(dto: CreateEmployeeDto) {
@@ -58,6 +61,7 @@ export class EmployeesService {
     if (!employee) {
       throw new NotFoundException(`Employee with ID ${id} not found`);
     }
+    this.getEmployeeProfile(id); // Cache the employee profile
     return employee;
   }
 
@@ -71,5 +75,30 @@ export class EmployeesService {
     employee.isActive = false;
     await this.employeeRepository.save(employee);
     return { message: `Employee ${id} terminated successfully` };
+  }
+
+  async getEmployeeProfile(employeeId: number): Promise<Employee> {
+    const cacheKey = `employee:${employeeId}`;
+    const cachedEmployee = await this.cacheService.get<Employee>(cacheKey);
+    if (cachedEmployee) {
+      console.log('⏩ Returning Cached Employee Data');
+      this.logger.log(
+        `Cache hit for employee ID ${employeeId}: ${JSON.stringify(cachedEmployee)}`,
+      );
+      return cachedEmployee;
+    }
+
+    console.log('🔍 Fetching Employee Data from DB');
+    console.log(`Fetching employee with ID ${employeeId}`);
+
+    const employee = await this.employeeRepository.findOne({
+      where: { id: employeeId },
+    });
+
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    // Store in Redis
+    await this.cacheService.set(cacheKey, employee, 3600);
+    return employee;
   }
 }
