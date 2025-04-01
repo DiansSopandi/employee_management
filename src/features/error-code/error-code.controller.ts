@@ -1,9 +1,9 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { CreateErrorDto } from './dto/create-error-code.dto';
-import InsuranceApi from 'src/utils/decorators/header.decorator';
+import EmployeeApi from 'src/utils/decorators/header.decorator';
 import { ErrorCodeService } from './error-code.service';
 
-@InsuranceApi('Error Codes')
+@EmployeeApi('Error Codes')
 @Controller('error-code')
 export class ErrorCodeController {
   constructor(private readonly errorCodeService: ErrorCodeService) {}

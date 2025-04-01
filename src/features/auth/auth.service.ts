@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateAuthenticateDto } from './dto/create-auth.dto';
 import { ConfigService } from '@nestjs/config';
+import { AuditTrailService } from 'src/audit-trail/audit-trail.service';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private readonly auditService: AuditTrailService,
   ) {
     this.logger = new Logger(AuthService.name);
   }
@@ -75,6 +77,8 @@ export class AuthService {
       'JWT_RT_COOKIE_EXP',
     )}`;
 
+    // Log authentication event
+    await this.auditService.logChange('User', 'LOGIN', +id);
     return {
       access_token: at,
       at_cookie: atCookie,
@@ -98,6 +102,15 @@ export class AuthService {
   //     return CrudMessage.updateError(this.entityName, userId, error);
   //   }
   // }
+
+  async changeUserRole(userId: number, newRole: string) {
+    // Perform role change logic
+
+    // Log role change event
+    await this.auditService.logChange('User', 'UPDATE_ROLE', userId, {
+      role: newRole,
+    });
+  }
 
   getCookiesForLogOut() {
     return [

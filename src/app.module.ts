@@ -10,10 +10,12 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './features/auth/guards/jwt-auth.guard';
 import { EmployeeConsumer } from './features/employees/employee.consumer';
 import { RedisCacheModule } from '@app/commons';
+import { AuditTrailModule } from './audit-trail/audit-trail.module';
 
 @Module({
   imports: [
     RedisCacheModule,
+    AuditTrailModule,
     ConfigModule.forRoot({
       envFilePath: '.env',
       expandVariables: true,
@@ -35,6 +37,7 @@ import { RedisCacheModule } from '@app/commons';
     }),
     FeaturesModule,
     LoggerModule,
+    AuditTrailModule,
   ],
   controllers: [AppController],
   providers: [

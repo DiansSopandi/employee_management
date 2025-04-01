@@ -12,6 +12,8 @@ import * as passport from 'passport';
 import * as cookieParser from 'cookie-parser';
 import * as bodyParser from 'body-parser';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { AuditInterceptor } from './interceptors/audit.interceptor';
+import { AuditTrailService } from './audit-trail/audit-trail.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -43,6 +45,15 @@ async function bootstrap() {
   const errorCodeInstance = app.get(ErrorCodeService);
   app.useGlobalFilters(
     new GlobalExceptionFilter(loggerInstance, errorCodeInstance),
+  );
+  const auditRepository = app.get('AuditLogRepository');
+  app.useGlobalInterceptors(
+    new AuditInterceptor(
+      new AuditTrailService(
+        auditRepository,
+        new Logger(AuditTrailService.name),
+      ),
+    ),
   );
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 

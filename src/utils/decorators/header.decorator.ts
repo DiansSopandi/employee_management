@@ -1,7 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiHeader, ApiTags } from '@nestjs/swagger';
 
-export default function InsuranceApi(...apiTag: string[]) {
+export default function EmployeeApi(...apiTag: string[]) {
   return applyDecorators(
     // ApiHeader({
     //   name: 'X-CSRF-TOKEN',

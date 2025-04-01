@@ -32,8 +32,8 @@ export class AuthController {
     @Body() createAuthenticateDto: CreateAuthenticateDto,
     @Session() session: any,
   ) {
-    const { sub, email, roles } = req.user,
-      token = await this.authService.getTokens(sub, email, roles),
+    const { id, email, roles } = req.user,
+      token = await this.authService.getTokens(id, email, roles),
       atToken = token['at_cookie'],
       rtToken = token['rt_cookie'];
 

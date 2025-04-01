@@ -10,10 +10,12 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SessionSerializer } from './session.serializer';
+import { AuditTrailModule } from 'src/audit-trail/audit-trail.module';
 
 @Module({
   imports: [
     UsersModule,
+    AuditTrailModule,
     PassportModule,
     PassportModule.register({ session: true }),
     JwtModule.registerAsync({
