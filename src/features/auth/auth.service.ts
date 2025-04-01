@@ -16,7 +16,9 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+  ) {
+    this.logger = new Logger(AuthService.name);
+  }
 
   async validateUser(loginDto: CreateAuthenticateDto) {
     const user = await this.usersService.findByEmail(loginDto);

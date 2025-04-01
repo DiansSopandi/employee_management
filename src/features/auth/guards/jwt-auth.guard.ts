@@ -20,7 +20,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest();
 
     if (
-      (isPublic && !request.cookies['knowme_at']) ||
+      (isPublic && !request.cookies['jwt_at']) ||
       request.originalUrl === '/v1/auth/login'
     )
       return true;
@@ -29,9 +29,30 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err: any, user: any, info: any) {
-    if (err || !user) {
-      throw new UnauthorizedException('Invalid or expired token');
+    if (err || !user) throw new UnauthorizedException();
+
+    if (!user) {
+      if (info?.name === 'TokenExpiredError') {
+        throw new UnauthorizedException(
+          'Token has expired. Please log in again.',
+        );
+      }
+      if (info?.name === 'JsonWebTokenError') {
+        throw new UnauthorizedException(
+          'Invalid token. Authentication failed.',
+        );
+      }
+      if (info?.name === 'NotBeforeError') {
+        throw new UnauthorizedException(
+          'Token is not yet active. Try again later.',
+        );
+      }
+
+      throw new UnauthorizedException(
+        'Authentication failed. Token is missing or invalid.',
+      );
     }
+
     return user;
   }
 }

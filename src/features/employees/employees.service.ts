@@ -23,7 +23,9 @@ export class EmployeesService {
     private readonly rabbitMQService: RabbitMQService,
     private readonly cacheService: CacheService,
     private readonly logger: Logger,
-  ) {}
+  ) {
+    this.logger = new Logger(EmployeesService.name);
+  }
 
   async create(dto: CreateEmployeeDto) {
     return this.dataSource.transaction(async (manager) => {
@@ -54,14 +56,19 @@ export class EmployeesService {
   }
 
   async getEmployeeById(id: number) {
+    const cachedEmployee = await this.getCacheEmployeeProfile(id); // Cache the employee profile
+    if (cachedEmployee) return cachedEmployee;
+
     const employee = await this.employeeRepository.findOne({
       where: { id },
       relations: ['payroll'],
     });
-    if (!employee) {
+
+    if (!employee)
       throw new NotFoundException(`Employee with ID ${id} not found`);
-    }
-    this.getEmployeeProfile(id); // Cache the employee profile
+
+    const cacheKey = `employee:${id}`;
+    await this.cacheService.set(cacheKey, employee, 3600);
     return employee;
   }
 
@@ -77,28 +84,18 @@ export class EmployeesService {
     return { message: `Employee ${id} terminated successfully` };
   }
 
-  async getEmployeeProfile(employeeId: number): Promise<Employee> {
+  async getCacheEmployeeProfile(employeeId: number): Promise<Employee | null> {
     const cacheKey = `employee:${employeeId}`;
     const cachedEmployee = await this.cacheService.get<Employee>(cacheKey);
     if (cachedEmployee) {
-      console.log('⏩ Returning Cached Employee Data');
       this.logger.log(
         `Cache hit for employee ID ${employeeId}: ${JSON.stringify(cachedEmployee)}`,
       );
       return cachedEmployee;
     }
 
-    console.log('🔍 Fetching Employee Data from DB');
-    console.log(`Fetching employee with ID ${employeeId}`);
-
-    const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId },
-    });
-
-    if (!employee) throw new NotFoundException('Employee not found');
-
     // Store in Redis
-    await this.cacheService.set(cacheKey, employee, 3600);
-    return employee;
+    // await this.cacheService.set(cacheKey, employee, 3600);
+    return null;
   }
 }

@@ -18,7 +18,9 @@ export class UsersService {
     @InjectRepository(UsersEntity)
     private readonly usersRepository: Repository<UsersEntity>,
     private readonly logger: Logger,
-  ) {}
+  ) {
+    this.logger = new Logger(UsersService.name);
+  }
 
   async create(createUserDto: CreateUserDto) {
     const { password } = createUserDto;

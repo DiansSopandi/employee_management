@@ -10,6 +10,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     private readonly logger: Logger,
   ) {
     super({ usernameField: 'email' });
+    this.logger = new Logger(LocalStrategy.name);
   }
 
   async validate(email: string, password: string): Promise<any> {

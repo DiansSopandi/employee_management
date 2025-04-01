@@ -14,7 +14,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(
     @Inject('winston') private readonly logger: Logger,
     private readonly errorCodeServic: ErrorCodeService,
-  ) {}
+  ) {
+    this.logger = new Logger(GlobalExceptionFilter.name);
+  }
 
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -32,7 +34,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.logger.error(exception.message);
       response.status(500).json({
         success: false,
-        message: 'Internal Server Error',
+        message: exception.detail,
       });
     }
   }

@@ -6,33 +6,19 @@ import { createClient, RedisClientType } from 'redis';
 
 @Injectable()
 export class CacheService implements OnModuleInit {
-  // private readonly redisClientType: RedisClientType;
-  // private readonly redisClient: Redis;
-
   constructor(
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private readonly cacheManager: Cache,
     private readonly logger: Logger,
   ) {
-    // this.redisClientType = createClient({
-    //   socket: {
-    //     host: process.env.REDIS_HOST || 'localhost',
-    //     port: Number(process.env.REDIS_PORT) || 6379,
-    //   },
-    // });
-    // this.redisClientType = new Redis({
-    //   host: process.env.REDIS_HOST || 'localhost',
-    //   port: Number(process.env.REDIS_PORT) || 6379,
-    //   password: process.env.REDIS_PASSWORD || '',
-    // });
+    this.logger = new Logger(CacheService.name);
   }
 
   async onModuleInit() {
     try {
-      // await this.redisClientType.connect();
       await this.redisClient.connect();
       await this.cacheManager.set('test', 'test', 10);
-      this.logger.log('Redis is connected and working');
+      this.logger.warn('Redis is connected and working');
     } catch (error) {
       this.logger.error('Redis connection failed:', error);
     }
@@ -41,16 +27,27 @@ export class CacheService implements OnModuleInit {
   async get<T>(key: string): Promise<T | null> {
     const data = await this.redisClient.get(`${CACHE_PREFIX}${key}`);
     return data ? JSON.parse(data) : null;
-    // return await this.cacheManager.get<T>(key);
   }
 
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
-    const data = JSON.stringify(value);
-    await this.redisClient.setex(
-      `${CACHE_PREFIX}${key}`,
-      ttl ?? DEFAULT_TTL,
-      data,
-    );
+    try {
+      const data = JSON.stringify(value);
+      await this.redisClient.set(
+        `${CACHE_PREFIX}${key}`,
+        data,
+        'EX',
+        ttl ?? DEFAULT_TTL,
+      );
+      this.logger.warn(`Cache set for key: ${CACHE_PREFIX}${key}`);
+    } catch (error) {
+      this.logger.error(
+        `Error setting cache for key: ${CACHE_PREFIX}${key}`,
+        error,
+      );
+      throw new Error(
+        `Failed to set cache for key: ${CACHE_PREFIX}${key} - ${error.message}`,
+      );
+    }
   }
 
   async delete(key: string): Promise<void> {
