@@ -7,8 +7,8 @@ import EmployeeApi from 'src/utils/decorators/header.decorator';
 
 @EmployeeApi('Audit Logs')
 @Controller('audit-trail')
+@Roles('admin')
 @UseGuards(AuthGuard, RoleGuard) // Protect with authentication & role guard
-@Roles('admin') // Only allow admins to access
 export class AuditTrailController {
   constructor(private readonly auditService: AuditTrailService) {}
 

@@ -14,17 +14,21 @@ export class AuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    const authHeader = request.headers.authorization;
+    let authHeader = request.headers.authorization;
 
     if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing or invalid token');
+      const tokenFromCookie = request.cookies?.jwt_at;
+      if (!tokenFromCookie) {
+        throw new UnauthorizedException('Missing or invalid token');
+      }
+      authHeader = `Bearer ${tokenFromCookie}`;
     }
 
     try {
       const token = authHeader.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
 
-      request.user = decoded; // Attach decoded user to request
+      request.user = decoded;
       return true;
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');

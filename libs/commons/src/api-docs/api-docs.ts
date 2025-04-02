@@ -13,6 +13,7 @@ export class ApiDocs {
       .setTitle(appName)
       .setDescription(appDescription)
       .setVersion(appVersion)
+      .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);
     const options = {

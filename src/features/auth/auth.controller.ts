@@ -35,17 +35,20 @@ export class AuthController {
     const { id, email, roles } = req.user,
       token = await this.authService.getTokens(id, email, roles),
       atToken = token['at_cookie'],
-      rtToken = token['rt_cookie'];
+      rtToken = token['rt_cookie'],
+      bearerToken = token['access_token'];
 
     session['userId'] = req.user['id'].toString();
     session['email'] = req.user['email'];
 
     req.res.setHeader('Set-Cookie', [atToken, rtToken]);
+    req.res.setHeader('Authorization', `Bearer ${bearerToken}`);
 
     createAuthenticateDto['id'] = req.user.id;
     return {
       id: createAuthenticateDto['id'],
       email: createAuthenticateDto['email'],
+      accessToken: bearerToken,
     };
   }
 
