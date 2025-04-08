@@ -21,6 +21,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.6.0",
+    "@nestjs/axios": "^4.0.0",
     "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^11.0.11",
     "@nestjs/config": "^4.0.1",
@@ -29,10 +31,12 @@
     "@nestjs/microservices": "^11.0.12",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.11",
+    "@nestjs/schedule": "^5.0.1",
     "@nestjs/swagger": "^11.0.6",
     "@nestjs/typeorm": "^11.0.0",
     "amqp-connection-manager": "^4.1.14",
     "amqplib": "^0.10.5",
+    "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cache-manager-redis-store": "^3.0.1",

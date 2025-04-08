@@ -5,7 +5,9 @@ import { AuthModule } from './auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
 import { EmployeesModule } from './employees/employees.module';
 import { PayrollService } from './payroll/payroll.service';
-import { PayrollModule } from './payroll/payroll.module';
+import { PayrollModule } from './integrations/payroll/payroll.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { PayrollModule } from './payroll/payroll.module';
     PassportModule.register({ session: true }),
     EmployeesModule,
     PayrollModule,
+    SchedulerModule,
+    ScheduleModule.forRoot(),
   ],
   exports: [FeaturesModule],
   providers: [PayrollService],
