@@ -46,6 +46,7 @@ async function bootstrap() {
   app.useGlobalFilters(
     new GlobalExceptionFilter(loggerInstance, errorCodeInstance),
   );
+
   const auditRepository = app.get('AuditLogRepository');
   app.useGlobalInterceptors(
     new AuditInterceptor(
@@ -97,7 +98,7 @@ async function bootstrap() {
     },
   });
 
-  await app.startAllMicroservices(); // ✅ Start microservices
+  await app.startAllMicroservices();
   await app.listen(port);
   logger.log('Application running on port ' + port);
 }

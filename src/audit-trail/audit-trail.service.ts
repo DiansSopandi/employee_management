@@ -64,10 +64,16 @@ export class AuditTrailService {
       query.andWhere('audit.entity = :entity', { entity });
     }
     if (startDate) {
-      query.andWhere('audit.timestamp >= :startDate', { startDate });
+      query.andWhere('audit.timestamp >= :startDate', {
+        startDate: new Date(startDate),
+      });
     }
     if (endDate) {
-      query.andWhere('audit.timestamp <= :endDate', { endDate });
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query.andWhere('audit.timestamp <= :endDate', {
+        endDate: end,
+      });
     }
 
     return query
