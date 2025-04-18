@@ -69,8 +69,10 @@ export class PayrollService {
       const filtered = data.data.filter((item: any) =>
         selectedIds.includes(item.employeeId),
       );
+
       if (!filtered.length)
         return { success: false, message: 'No data found', data: [] };
+
       this.salaryRepo.save(filtered);
       return {
         success: true,

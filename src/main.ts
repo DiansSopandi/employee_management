@@ -18,7 +18,6 @@ import { AuditTrailService } from './audit-trail/audit-trail.service';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: new Logger(),
-    cors: true,
   });
 
   app.use(bodyParser.json({ limit: '50mb' }));
@@ -58,11 +57,24 @@ async function bootstrap() {
   );
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://yourfrontend.vercel.app',
+    'https://yourcompany.com',
+  ];
+
   app.enableCors({
-    allowedHeaders: ['content-type'],
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed'));
+      }
+    },
     credentials: true,
+    allowedHeaders: ['content-type', 'authorization'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });
 
   app.use(cookieParser());
@@ -82,6 +94,11 @@ async function bootstrap() {
       store: new session.MemoryStore(),
     }),
   );
+
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+  });
 
   app.use(passport.initialize());
   app.use(passport.session());

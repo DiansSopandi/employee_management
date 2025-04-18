@@ -36,8 +36,8 @@ export class UsersService {
     });
 
     if (userExists) {
-      this.logger.error('User already exists', userExists.email);
-      throw new HttpException('User already exists', 400);
+      this.logger.error('Username or email already exists', userExists.email);
+      throw new HttpException('Username or email already exists', 400);
     }
 
     return await this.usersRepository
