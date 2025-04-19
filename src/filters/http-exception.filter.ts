@@ -38,7 +38,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.logger.error(exception.message);
       response.status(500).json({
         success: false,
-        message: exception.detail,
+        message: exception.message,
+        statusCode: 500,
       });
     }
   }

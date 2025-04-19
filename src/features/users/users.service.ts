@@ -8,9 +8,17 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersEntity } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { Repository, FindManyOptions, ILike } from 'typeorm';
 import { PasswordUtils } from 'src/utils/password.utils';
 import { CreateAuthenticateDto } from '../auth/dto/create-auth.dto';
+import { FilterUserDto } from './dto/filter-user.dto';
+import { parseSort } from 'src/utils/parse-sort.utils';
+import {
+  paginateResponse,
+  paginateResponseWithMeta,
+  IPaginateResponse,
+} from 'src/utils/paginate-response.utils';
+import { buildFindOptions } from 'src/utils/build-find-option.utils';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +28,24 @@ export class UsersService {
     private readonly logger: Logger,
   ) {
     this.logger = new Logger(UsersService.name);
+  }
+
+  private parseSort(sort?: string): Record<string, 'ASC' | 'DESC'> {
+    if (!sort) return { id: 'DESC' };
+
+    const order: Record<string, 'ASC' | 'DESC'> = {};
+    const fields = sort.split(',');
+
+    fields.forEach((field) => {
+      const direction = field.startsWith('-') ? 'DESC' : 'ASC';
+      const key = field.replace(/^[-+]/, '');
+      order[key] = direction;
+      console.log({ key, direction }); // Debugging line
+    });
+
+    console.log('Parsed order:', order); // Debugging line
+    this.logger.log('Parsed order:', order); // Debugging line
+    return order;
   }
 
   async create(createUserDto: CreateUserDto) {
@@ -59,14 +85,56 @@ export class UsersService {
     return await this.create(newUserDto);
   }
 
-  async findAll() {
-    return await this.usersRepository.find().then((res) => {
-      return {
-        success: true,
-        message: 'User Fetched',
-        data: res,
-      };
+  async findAll(
+    filter: FilterUserDto,
+  ): Promise<IPaginateResponse<UsersEntity>> {
+    const { page = 0, pageSize = 10, sort, fullSearch } = filter;
+
+    // const [data, total] = await this.usersRepository.findAndCount({
+    //   select: {
+    //     id: true,
+    //     username: true,
+    //     email: true,
+    //     roles: true, // Assuming you have a relation called 'roles' in your entity
+    //   },
+    //   where: fullSearch
+    //     ? [
+    //         { username: ILike(`%${fullSearch}%`) },
+    //         { email: ILike(`%${fullSearch}%`) },
+    //       ]
+    //     : {},
+    //   order: parseSort(sort),
+    //   skip: page * pageSize,
+    //   take: pageSize,
+    //   // relations: {
+    //   //   roles: true, // Assuming you have a relation called 'roles' in your entity
+    //   // },
+    // });
+
+    const options = buildFindOptions<UsersEntity>({
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        roles: true,
+      },
+      filter,
+      searchableFields: ['username', 'email'],
+      relations: {
+        roles: true,
+      },
     });
+
+    const [data, total] = await this.usersRepository.findAndCount(options);
+
+    return paginateResponse(
+      data,
+      total,
+      page,
+      pageSize,
+      true,
+      'Users fetched successfully',
+    );
   }
 
   async findById(id: number): Promise<UsersEntity> {

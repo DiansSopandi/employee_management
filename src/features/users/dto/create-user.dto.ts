@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -30,6 +31,12 @@ export class CreateUserDto {
   password: string;
 
   @ApiPropertyOptional({ enum: ROLES, isArray: true, default: [ROLES.USER] })
+  @IsEnum(ROLES, {
+    each: true,
+    message: `Roles must be one of the following: ${Object.values(ROLES).join(
+      ', ',
+    )}`,
+  })
   @IsOptional()
   @IsArray()
   roles: ROLES[] = [ROLES.USER];
