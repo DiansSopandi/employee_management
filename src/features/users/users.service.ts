@@ -120,18 +120,18 @@ export class UsersService {
       },
       filter,
       searchableFields: ['username', 'email'],
-      relations: {
-        roles: true,
-      },
+      // relations: {
+      //   roles: true,
+      // },
     });
 
     const [data, total] = await this.usersRepository.findAndCount(options);
 
-    return paginateResponse(
+    return paginateResponseWithMeta(
       data,
       total,
-      page,
-      pageSize,
+      Number(page),
+      Number(pageSize),
       true,
       'Users fetched successfully',
     );
