@@ -21,10 +21,10 @@ export function buildFindOptions<T>({
   relations,
 }: BuildFindOptionsParams<T>): FindManyOptions<T> {
   const { page = 0, pageSize = 10, fullSearch, sort } = filter;
-
+  const trimFullSearch = fullSearch?.trim();
   // Handle search
   let where: any = {};
-  if (fullSearch && searchableFields.length > 0) {
+  if (trimFullSearch && searchableFields.length > 0) {
     where = searchableFields.map((field) => ({
       [field]: ILike(`%${fullSearch}%`),
     }));
