@@ -90,7 +90,6 @@ export class UsersService {
   ): Promise<IPaginateResponse<UsersEntity>> {
     const { page = 0, pageSize = 10, sort, fullSearch } = filter;
 
-    // test comment
     // const [data, total] = await this.usersRepository.findAndCount({
     //   select: {
     //     id: true,
