@@ -1,6 +1,7 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToOne } from 'typeorm';
 import Base from '@app/commons/base-entities/base.entity';
 import { ROLES } from '@app/commons/constants/enums';
+import { WhatsAppSessionEntity } from 'src/features/sessions/entities/session.entity';
 
 @Entity('users')
 export class UsersEntity extends Base {
@@ -29,6 +30,9 @@ export class UsersEntity extends Base {
   })
   password: string;
 
+  @Column({ unique: true, type: 'varchar', nullable: true })
+  phoneNumber: string;
+
   @Column({
     name: 'emailVerificationCode',
     type: 'varchar',
@@ -52,4 +56,7 @@ export class UsersEntity extends Base {
     default: [ROLES.USER],
   })
   roles: ROLES[];
+
+  @OneToOne(() => WhatsAppSessionEntity, (session) => session.user)
+  session: WhatsAppSessionEntity;
 }

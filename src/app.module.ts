@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './features/auth/guards/jwt-auth.guard';
 import { EmployeeConsumer } from './features/employees/employee.consumer';
 import { RedisCacheModule } from '@app/commons';
 import { AuditTrailModule } from './audit-trail/audit-trail.module';
+import { SessionsModule } from './features/sessions/sessions.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AuditTrailModule } from './audit-trail/audit-trail.module';
     FeaturesModule,
     LoggerModule,
     AuditTrailModule,
+    SessionsModule,
   ],
   controllers: [AppController],
   providers: [

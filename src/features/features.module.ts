@@ -8,6 +8,8 @@ import { PayrollService } from './payroll/payroll.service';
 import { PayrollModule } from './integrations/payroll/payroll.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { SessionsModule } from './sessions/sessions.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     PayrollModule,
     SchedulerModule,
     ScheduleModule.forRoot(),
+    WhatsappModule,
+    SessionsModule,
   ],
   exports: [FeaturesModule],
   providers: [PayrollService],
