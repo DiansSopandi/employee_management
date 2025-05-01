@@ -14,6 +14,8 @@ import * as bodyParser from 'body-parser';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { AuditTrailService } from './audit-trail/audit-trail.service';
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import { EventEmitter } from 'events';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -105,6 +107,10 @@ async function bootstrap() {
   app.use(passport.session());
 
   ApiDocs.setup(app, app.get(ConfigService));
+
+  app.useWebSocketAdapter(new IoAdapter(app));
+
+  // EventEmitter.defaultMaxListeners = 30;
 
   // ✅ Start microservice for consuming RabbitMQ messages
   app.connectMicroservice<MicroserviceOptions>({

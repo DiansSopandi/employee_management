@@ -1,14 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class SendMessageDto {
+export class CreateAuthWhatsappDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  to: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  message: string;
+  waId: string;
 }

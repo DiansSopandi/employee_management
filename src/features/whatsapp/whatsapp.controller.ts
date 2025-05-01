@@ -19,6 +19,13 @@ export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
   @Public()
+  @Post('start/:userId')
+  async startClient(@Param('userId') userId: string) {
+    await this.whatsappService.createClient(userId);
+    return { message: `Client started for ${userId}` };
+  }
+
+  @Public()
   @Get('qr')
   getQrCode() {
     return {
@@ -33,8 +40,8 @@ export class WhatsappController {
 
   @Public()
   @Post('send')
-  sendMessage(@Body() dto: SendMessageDto) {
-    return this.whatsappService.sendMessage(dto);
+  sendMessage(@Query('userId') userId: string, @Body() dto: SendMessageDto) {
+    return this.whatsappService.sendMessage(userId, dto);
   }
 
   // @Post('send')
@@ -43,37 +50,19 @@ export class WhatsappController {
   // }
 
   @Public()
-  @Post('logout')
-  async logout() {
-    await this.whatsappService.logout();
-    return { message: 'Logout successful' };
+  @Post('logout/:userId')
+  async logout(@Param('userId') userId: string) {
+    return await this.whatsappService
+      .logout(userId)
+      .then((res) =>
+        res ? { message: 'Logout successful' } : { message: 'Logout failed' },
+      );
+    // return { message: 'Logout successful' };
   }
 
-  @Post()
-  create(@Body() createWhatsappDto: CreateWhatsappDto) {
-    return this.whatsappService.create(createWhatsappDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.whatsappService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.whatsappService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateWhatsappDto: UpdateWhatsappDto,
-  ) {
-    return this.whatsappService.update(+id, updateWhatsappDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.whatsappService.remove(+id);
+  @Public()
+  @Post('logout-all-session')
+  async logOutAllSession() {
+    return this.whatsappService.logOutAllSession();
   }
 }

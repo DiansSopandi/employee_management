@@ -9,6 +9,7 @@ import {
   HttpStatus,
   HttpCode,
   Logger,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthenticateDto } from './dto/create-auth.dto';
@@ -16,11 +17,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from 'src/utils/decorators/public.decorator';
 import { Request } from 'express';
+import { JwtService } from '@nestjs/jwt';
+import { CreateAuthWhatsappDto } from './dto/create-auth-whatsapp.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
     private logger: Logger,
   ) {}
 
@@ -50,6 +54,35 @@ export class AuthController {
       email: createAuthenticateDto['email'],
       accessToken: bearerToken,
     };
+  }
+
+  @Public()
+  @Post('whatsapp-login')
+  async whatsappLogin(
+    @Req() req,
+    @Body() body: CreateAuthWhatsappDto,
+    @Res({ passthrough: true }) res,
+  ) {
+    try {
+      const { user, atToken, rtToken, max_age, at_cookie, rt_cookie } =
+        await this.authService.whatsAppLogin(body.waId);
+
+      req.res.setHeader('Set-Cookie', [at_cookie, rt_cookie]);
+      req.res.setHeader('Authorization', `Bearer ${atToken}`);
+
+      // res.cookie('jwt_at', token, {
+      //   httpOnly: true,
+      //   secure: process.env.NODE_ENV === 'production',
+      //   sameSite: 'lax',
+      //   maxAge: max_age,
+      //   // maxAge: 1000 * 60 * 60 * 24 * 7, // 7 hari
+      // });
+
+      return { user, redirect: '/dashboard' };
+    } catch (error) {
+      this.logger.error('Error in whatsappLogin:', error);
+      throw error; // Rethrow the error to be handled by NestJS exception filter
+    }
   }
 
   @Post('logout')

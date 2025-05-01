@@ -19,9 +19,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     ]);
     const request = context.switchToHttp().getRequest();
 
+    const url = [
+      '/v1/auth/login',
+      '/v1/auth/whatsapp-login',
+      '/v1/whatsapp/qr',
+      '/v1/whatsapp/send',
+    ];
+
     if (
       (isPublic && !request.cookies['jwt_at']) ||
-      request.originalUrl === '/v1/auth/login'
+      url.includes(request.originalUrl)
     )
       return true;
 

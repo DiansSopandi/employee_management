@@ -9,10 +9,16 @@ import { UsersService } from '../users/users.service';
 import { CreateAuthenticateDto } from './dto/create-auth.dto';
 import { ConfigService } from '@nestjs/config';
 import { AuditTrailService } from 'src/audit-trail/audit-trail.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { UsersEntity } from '../users/entities/user.entity';
+import { Repository } from 'typeorm';
+import { max } from 'class-validator';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectRepository(UsersEntity)
+    private readonly usersRepository: Repository<UsersEntity>,
     private logger: Logger,
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -102,6 +108,41 @@ export class AuthService {
   //     return CrudMessage.updateError(this.entityName, userId, error);
   //   }
   // }
+
+  async whatsAppLogin(waId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { waId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const { id, email, roles } = user;
+    const jwtPayload = {
+      sub: id,
+      email: email,
+      role: roles,
+    };
+
+    const atToken = await this.jwtService.signAsync(jwtPayload, {
+      secret: this.configService.get<string>('JWT_AT_SECRET'),
+      expiresIn: this.configService.get<string>('JWT_AT_EXP'),
+    });
+    const rtToken = await this.jwtService.signAsync(jwtPayload, {
+      secret: this.configService.get<string>('JWT_RT_SECRET'),
+      expiresIn: this.configService.get<string>('JWT_RT_EXP'),
+    });
+
+    return {
+      user,
+      atToken,
+      rtToken,
+      max_age: this.configService.get<string>('JWT_AT_COOKIE_EXP'),
+      at_cookie: `jwt_at=${atToken}; HttpOnly; Path=/; Max-Age=${this.configService.get<string>('JWT_AT_COOKIE_EXP')}`,
+      rt_cookie: `jwt_rt=${rtToken}; HttpOnly; Path=/; Max-Age=${this.configService.get<string>('JWT_RT_COOKIE_EXP')}`,
+    };
+  }
 
   async changeUserRole(userId: number, newRole: string) {
     // Perform role change logic

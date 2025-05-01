@@ -37,5 +37,6 @@ import { AuditTrailModule } from 'src/audit-trail/audit-trail.module';
     SessionSerializer,
     Logger,
   ],
+  exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

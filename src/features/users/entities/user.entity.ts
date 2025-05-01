@@ -33,6 +33,9 @@ export class UsersEntity extends Base {
   @Column({ unique: true, type: 'varchar', nullable: true })
   phoneNumber: string;
 
+  @Column({ unique: true, type: 'varchar', nullable: true })
+  waId: string;
+
   @Column({
     name: 'emailVerificationCode',
     type: 'varchar',
