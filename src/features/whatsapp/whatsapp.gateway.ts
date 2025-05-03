@@ -6,6 +6,8 @@ import {
 import { Server } from 'socket.io';
 import { WhatsappService } from './whatsapp.service';
 import { QrThrottleService } from './qr-throttle.service';
+import { v4 as uuidv4 } from 'uuid';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: { origin: '*' }, // Untuk testing bebas origin dulu
@@ -13,6 +15,8 @@ import { QrThrottleService } from './qr-throttle.service';
 export class WhatsappGateway {
   @WebSocketServer()
   server: Server;
+
+  private readonly logger = new Logger(WhatsappGateway.name);
 
   constructor(
     private readonly whatsappService: WhatsappService,
@@ -29,8 +33,8 @@ export class WhatsappGateway {
     const { userId } = payload;
 
     if (!this.qrThrottleService.canRequest(userId)) {
-      console.log(`QR request ignored for user ${userId} due to cooldown`);
-      return; // abaikan jika masih dalam cooldown
+      this.logger.warn(`QR request ignored for user ${userId} due to cooldown`);
+      return;
     }
 
     await this.whatsappService.createClient(userId);

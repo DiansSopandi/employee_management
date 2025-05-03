@@ -19,6 +19,8 @@ import { Public } from 'src/utils/decorators/public.decorator';
 import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { CreateAuthWhatsappDto } from './dto/create-auth-whatsapp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ac } from '@faker-js/faker/dist/airline-CBNP41sR';
 
 @Controller('auth')
 export class AuthController {
@@ -64,24 +66,43 @@ export class AuthController {
     @Res({ passthrough: true }) res,
   ) {
     try {
-      const { user, atToken, rtToken, max_age, at_cookie, rt_cookie } =
+      const { user, atToken, at_cookie, rt_cookie } =
         await this.authService.whatsAppLogin(body.waId);
 
       req.res.setHeader('Set-Cookie', [at_cookie, rt_cookie]);
       req.res.setHeader('Authorization', `Bearer ${atToken}`);
 
-      // res.cookie('jwt_at', token, {
-      //   httpOnly: true,
-      //   secure: process.env.NODE_ENV === 'production',
-      //   sameSite: 'lax',
-      //   maxAge: max_age,
-      //   // maxAge: 1000 * 60 * 60 * 24 * 7, // 7 hari
-      // });
-
       return { user, redirect: '/dashboard' };
     } catch (error) {
       this.logger.error('Error in whatsappLogin:', error);
-      throw error; // Rethrow the error to be handled by NestJS exception filter
+      throw error;
+    }
+  }
+
+  @Public()
+  @Post('verify-otp')
+  async verifyOtp(@Req() req, @Body() body: VerifyOtpDto) {
+    try {
+      const { userId, otp, email, phoneNumber } = body;
+      const result = await this.authService.verifyOtp({
+        userId,
+        otp,
+        email,
+        phoneNumber,
+      });
+
+      const { access_token, at_cookie, rt_cookie } = result.token;
+      req.res.setHeader('Set-Cookie', [at_cookie, rt_cookie]);
+      req.res.setHeader('Authorization', `Bearer ${access_token}`);
+
+      return {
+        success: true,
+        message: 'OTP verified successfully',
+        redirect: '/dashboard',
+      };
+    } catch (error) {
+      this.logger.error('Error in verifyOtp:', error);
+      throw error;
     }
   }
 

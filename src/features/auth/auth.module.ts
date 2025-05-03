@@ -11,12 +11,17 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SessionSerializer } from './session.serializer';
 import { AuditTrailModule } from 'src/audit-trail/audit-trail.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { OtpCodesWhatsappEntity } from '../whatsapp/entities/otp-codes-whatsapp.entity';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
   imports: [
     UsersModule,
     AuditTrailModule,
     PassportModule,
+    WhatsappModule,
+    TypeOrmModule.forFeature([OtpCodesWhatsappEntity]),
     PassportModule.register({ session: true }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

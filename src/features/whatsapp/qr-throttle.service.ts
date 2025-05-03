@@ -4,7 +4,8 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class QrThrottleService {
   private readonly lastRequested = new Map<string, number>(); // userId -> timestamp
-  private readonly cooldownMs = 30_000; // 30 detik minimal antar request
+  // private readonly cooldownMs = 10_000; // 30 detik minimal antar request
+  private readonly cooldownMs = 5_000; // 30 detik minimal antar request
 
   canRequest(userId: string): boolean {
     const now = Date.now();

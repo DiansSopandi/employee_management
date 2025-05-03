@@ -1,14 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CreateWhatsappDto } from './dto/create-whatsapp.dto';
-import { UpdateWhatsappDto } from './dto/update-whatsapp.dto';
 import { Client, LocalAuth, Message } from 'whatsapp-web.js';
-import * as qrcode from 'qrcode';
-// import * as qrcode from 'qrcode-terminal';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ChatHistories } from './entities/chat-histories.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SessionsService } from '../sessions/sessions.service'; // Ini service handling wa client
 import { Server } from 'socket.io';
 import { WhatsappInstanceEntity } from './entities/whatsapp-instance.entity';
 import { UsersEntity } from '../users/entities/user.entity';
@@ -16,6 +11,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { OtpCodesWhatsappEntity } from './entities/otp-codes-whatsapp.entity';
 import { OtpHelper } from 'src/helper/otp.helper';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class WhatsappService {
@@ -99,6 +96,52 @@ export class WhatsappService {
     }
 
     // Buat client baru, dan simpan promise-nya supaya tidak double-create
+    // const clientPromise = new Promise<Client>((resolve, reject) => {
+    //   try {
+    //     const client = new Client({
+    //       authStrategy: new LocalAuth({ clientId: userId }),
+    //       puppeteer: { headless: true },
+    //     });
+
+    //     this.clients[userId] = client;
+
+    //     this.handleQr(client, userId);
+    //     this.handleReady(client, userId);
+    //     this.handleAuthenticated(client, userId);
+    //     this.handleMessage(client);
+    //     this.handleDisconnected(client, userId);
+
+    //     client.initialize();
+    //     this.clients.set(userId, client);
+    //     resolve(client);
+    //   } catch (error) {
+    //     reject(error instanceof Error ? error : new Error(String(error)));
+    //   } finally {
+    //     this.clientPromises.delete(userId); // Hapus promise setelah selesai
+    //   }
+    // });
+    return this.initializeClient(userId);
+    // this.clientPromises.set(userId, clientPromise);
+    // return clientPromise;
+  }
+
+  renameSession(oldId: string, userId: string) {
+    const basePath = path.resolve('.wwebjs_auth');
+    const oldPath = path.join(basePath, `session-${oldId}`);
+    const newPath = path.join(basePath, `session-${userId}`);
+
+    const oldExists = fs.existsSync(oldPath);
+    const newExists = fs.existsSync(newPath);
+
+    if (oldExists && !newExists) {
+      fs.renameSync(oldPath, newPath);
+      this.logger.log(
+        `Session moved from ${oldId} to ${userId} successfully...`,
+      );
+    }
+  }
+
+  async initializeClient(userId: string): Promise<Client> {
     const clientPromise = new Promise<Client>((resolve, reject) => {
       try {
         const client = new Client({
@@ -114,19 +157,6 @@ export class WhatsappService {
         this.handleMessage(client);
         this.handleDisconnected(client, userId);
 
-        // client.on('disconnected', async (reason) => {
-        //   console.log(`Client disconnected ${userId}: ${reason}`);
-
-        //   await this.whatsappInstanceRepository.update(
-        //     { uuid: userId },
-        //     {
-        //       status: 'DISCONNECTED',
-        //     },
-        //   );
-
-        //   delete this.clients[userId];
-        // });
-
         client.initialize();
         this.clients.set(userId, client);
 
@@ -138,6 +168,7 @@ export class WhatsappService {
         this.clientPromises.delete(userId); // Hapus promise setelah selesai
       }
     });
+
     this.clientPromises.set(userId, clientPromise);
     return clientPromise;
   }
@@ -208,6 +239,7 @@ export class WhatsappService {
       const user = await this.userRepository.findOne({ where: { waId } });
 
       if (user) {
+        await this.createClient(user.id.toString());
         this.io.emit(`login_success-${userId}`, {
           waId,
           user,
@@ -216,16 +248,22 @@ export class WhatsappService {
         });
       } else {
         // Generate & simpan OTP untuk waId
-        const otpRecord = await this.otpRepository.findOne({
-          where: [
-            { waId, status: 'PENDING' },
-            { waId, status: 'VERIFIED' },
-          ],
-        });
+        const otpRecord = await this.otpRepository
+          .findOne({
+            where: [{ waId, status: 'PENDING' }],
+          })
+          .then(async (otpCode) => {
+            if (!otpCode) return null;
+
+            if (otpCode?.expiresAt < new Date()) {
+              await this.otpRepository.delete({ waId });
+            }
+            return null;
+          });
 
         if (!otpRecord) {
           const otp = OtpHelper.generateOtp();
-          console.log({ otp });
+          this.logger.log(`OTP: ${otp}`);
 
           await this.otpRepository
             .save({
@@ -328,6 +366,18 @@ export class WhatsappService {
       await client.logout();
       // await this.client.logout();
       this.logger.log('logout successfully...');
+      return true;
+    }
+  }
+
+  async destroyClient(userId: string) {
+    const client = this.clients[userId];
+    if (!client) {
+      throw new Error(`No active WhatsApp session for user ${userId}`);
+    }
+    if (client) {
+      await client.destroy();
+      this.logger.log('destroy client successfully...');
       return true;
     }
   }

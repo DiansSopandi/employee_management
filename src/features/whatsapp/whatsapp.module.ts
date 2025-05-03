@@ -24,5 +24,6 @@ import { QrThrottleService } from './qr-throttle.service';
   ],
   controllers: [WhatsappController],
   providers: [WhatsappService, WhatsappGateway, QrThrottleService],
+  exports: [WhatsappService],
 })
 export class WhatsappModule {}
