@@ -28,7 +28,9 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
     private logger: Logger,
-  ) {}
+  ) {
+    this.logger = new Logger(AuthController.name);
+  }
 
   @Public()
   @UseGuards(LocalAuthGuard)
@@ -67,12 +69,12 @@ export class AuthController {
   ) {
     try {
       const { user, atToken, at_cookie, rt_cookie } =
-        await this.authService.whatsAppLogin(body.waId);
+        await this.authService.whatsAppLogin(body);
 
       req.res.setHeader('Set-Cookie', [at_cookie, rt_cookie]);
       req.res.setHeader('Authorization', `Bearer ${atToken}`);
 
-      return { user, redirect: '/dashboard' };
+      return { success: true, user, redirect: '/dashboard' };
     } catch (error) {
       this.logger.error('Error in whatsappLogin:', error);
       throw error;
@@ -99,6 +101,7 @@ export class AuthController {
         success: true,
         message: 'OTP verified successfully',
         redirect: '/dashboard',
+        userId: result.user.id,
       };
     } catch (error) {
       this.logger.error('Error in verifyOtp:', error);
@@ -108,17 +111,34 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Req() req, @Session() session: any) {
+  async logout(
+    @Req() req,
+    @Session() session: any,
+    @Res({ passthrough: true }) res,
+  ) {
     try {
-      req.res.setHeader('Set-Cookie', this.authService.getCookiesForLogOut());
+      try {
+        await this.authService.whatsappLogout(req.user.id.toString());
+      } catch (error) {
+        this.logger.error('Error in whatsappLogout:', error);
+      }
+      // req.res.setHeader('Set-Cookie', this.authService.getCookiesForLogOut());
+      const clearCookies = await this.authService.getCookiesForLogOut();
+      clearCookies.forEach((cookie) => res.header('Set-Cookie', cookie));
+
+      req.session.destroy(() => {});
+      res.clearCookie('employeeSession');
+      res.clearCookie('jwt_at');
+      res.clearCookie('jwt_rt');
 
       session['userId'] = null;
       session['email'] = null;
       session['passport'] = null;
 
+      this.logger.log(`Username ${req.user.email} logged out successfully`);
       return req.user
-        ? { id: req.user.id, email: req.user.email }
-        : { id: null, email: null };
+        ? { success: true, id: req.user.id, email: req.user.email }
+        : { success: false, id: null, email: null };
     } catch (error) {
       return { id: null, email: null, error };
     }

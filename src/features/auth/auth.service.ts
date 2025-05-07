@@ -10,6 +10,9 @@ import { Repository } from 'typeorm';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpCodesWhatsappEntity } from '../whatsapp/entities/otp-codes-whatsapp.entity';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { log } from 'winston';
+import { CreateAuthWhatsappDto } from './dto/create-auth-whatsapp.dto';
+import { Session } from 'inspector/promises';
 
 @Injectable()
 export class AuthService {
@@ -40,7 +43,8 @@ export class AuthService {
       data: { email: user.email, isActive: user.isActive },
     };
 
-    this.logger.log(response);
+    // this.logger.log(response);
+    this.logger.log(`Username ${user.email} logged in successfully`);
 
     const payload = {
       sub: user.id,
@@ -109,9 +113,9 @@ export class AuthService {
   //   }
   // }
 
-  async whatsAppLogin(waId: string) {
+  async whatsAppLogin(body: CreateAuthWhatsappDto) {
     const user = await this.usersRepository.findOne({
-      where: { waId },
+      where: { waId: body.waId },
     });
 
     if (!user) {
@@ -120,6 +124,10 @@ export class AuthService {
 
     const { id, email, roles } = user;
     const token = await this.getTokens(id.toString(), email, roles);
+
+    await this.whatsappService.destroyClient(body.uuid);
+    this.whatsappService.renameSession(body.uuid, user.id.toString());
+    await this.whatsappService.createClient(user.id.toString());
 
     return {
       user,
@@ -189,13 +197,24 @@ export class AuthService {
       message: 'OTP verified successfully',
       redirect: '/dashboard',
       token,
+      user,
     };
   }
 
-  getCookiesForLogOut() {
+  async whatsappLogout(userId: string) {
+    try {
+      return await this.whatsappService.logout(userId);
+    } catch (error) {
+      this.logger.error('Error in whatsappLogout:', error);
+      throw new UnauthorizedException(`Logout failed  ${error}`);
+    }
+  }
+
+  async getCookiesForLogOut() {
     return [
-      'jwt_at=; HttpOnly; Path=/; Max-Age=0',
-      'jwt_rt=; HttpOnly; Path=/; Max-Age=0',
+      'employeeSession=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax',
+      'jwt_at=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax',
+      'jwt_rt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax',
     ];
   }
 }

@@ -15,7 +15,6 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { AuditTrailService } from './audit-trail/audit-trail.service';
 import { IoAdapter } from '@nestjs/platform-socket.io';
-import { EventEmitter } from 'events';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {

@@ -6,4 +6,9 @@ export class CreateAuthWhatsappDto {
   @IsString()
   @IsNotEmpty()
   waId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  uuid: string;
 }

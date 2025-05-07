@@ -85,14 +85,16 @@ export class WhatsappService {
     });
   }
 
-  async createClient(userId: string): Promise<Client> {
-    if (this.clients.has(userId)) {
-      return this.clients.get(userId)!;
-    }
+  async createClient(userId: string, token = ''): Promise<Client> {
+    if (token) {
+      if (this.clients.has(userId)) {
+        return this.clients.get(userId)!;
+      }
 
-    // Jika sedang dibuat, tunggu promise yang sama
-    if (this.clientPromises.has(userId)) {
-      return this.clientPromises.get(userId)!;
+      // Jika sedang dibuat, tunggu promise yang sama
+      if (this.clientPromises.has(userId)) {
+        return this.clientPromises.get(userId)!;
+      }
     }
 
     // Buat client baru, dan simpan promise-nya supaya tidak double-create
@@ -138,6 +140,11 @@ export class WhatsappService {
       this.logger.log(
         `Session moved from ${oldId} to ${userId} successfully...`,
       );
+    }
+
+    if (newExists) {
+      fs.rmSync(oldPath, { recursive: true, force: true });
+      this.logger.log(`Session folder ${oldPath} deleted successfully...`);
     }
   }
 
@@ -210,16 +217,19 @@ export class WhatsappService {
         uuid: userId,
         status: 'INITIATED',
       });
-
-      client.on('qr', (qr) => {
-        this.qrCode = qr;
-        this.logger.log(`QR Code Generated for ${userId}`);
-
-        if (this.io) {
-          this.io.emit(`qr:${userId}`, qr);
-        }
-      });
     }
+    client.on('qr', (qr) => {
+      this.qrCode = qr;
+      this.logger.log(`QR Code Generated for ${userId}`);
+
+      if (this.io) {
+        this.io.emit(`qr:${userId}`, qr);
+      }
+
+      // this.handleReady(client, userId);
+      // this.handleAuthenticated(client, userId);
+      // this.handleMessage(client);
+    });
   }
 
   private handleReady(client: Client, userId: string) {
@@ -239,7 +249,7 @@ export class WhatsappService {
       const user = await this.userRepository.findOne({ where: { waId } });
 
       if (user) {
-        await this.createClient(user.id.toString());
+        // await this.createClient(user.id.toString());
         this.io.emit(`login_success-${userId}`, {
           waId,
           user,
@@ -360,12 +370,33 @@ export class WhatsappService {
     const client = this.clients[userId];
 
     if (!client) {
-      throw new Error(`No active WhatsApp session for user ${userId}`);
+      this.logger.error(`No active WhatsApp session for user ${userId}`);
+      return false;
     }
+
     if (client) {
-      await client.logout();
-      // await this.client.logout();
-      this.logger.log('logout successfully...');
+      try {
+        await client.logout();
+      } catch (error) {
+        this.logger.error('Whatsapp Client logout failed', error);
+        return false;
+      }
+
+      try {
+        await client.destroy();
+      } catch (error) {
+        this.logger.error('Whatsapp Client destroy failed', error);
+        return false;
+      }
+
+      this.logger.log('logout and destroy successfully...');
+      const sessionPath = path.join('.wwebjs_auth', `session_${userId}`);
+      if (fs.existsSync(sessionPath)) {
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+        this.logger.log(
+          `Session folder ${sessionPath} deleted successfully...`,
+        );
+      }
       return true;
     }
   }

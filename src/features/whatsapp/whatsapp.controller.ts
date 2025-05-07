@@ -55,9 +55,10 @@ export class WhatsappController {
     return await this.whatsappService
       .logout(userId)
       .then((res) =>
-        res ? { message: 'Logout successful' } : { message: 'Logout failed' },
+        res
+          ? { success: true, message: 'Logout successfully...' }
+          : { success: false, message: 'Logout failed...' },
       );
-    // return { message: 'Logout successful' };
   }
 
   @Public()
