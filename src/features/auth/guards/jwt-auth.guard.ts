@@ -24,6 +24,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       '/v1/auth/whatsapp-login',
       '/v1/whatsapp/qr',
       '/v1/whatsapp/send',
+      '/v1/auth/verify-otp',
     ];
 
     if (

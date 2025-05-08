@@ -153,7 +153,22 @@ export class WhatsappService {
       try {
         const client = new Client({
           authStrategy: new LocalAuth({ clientId: userId }),
-          puppeteer: { headless: true },
+          puppeteer: {
+            headless: true,
+            args: [
+              '--disable-dev-shm-usage',
+              '--disable-setuid-sandbox',
+              '--no-sandbox',
+              '--disable-gpu',
+              '--disable-extensions',
+              '--disable-background-timer-throttling',
+              '--disable-backgrounding-occluded-windows',
+            ],
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+          },
+          // Tambahkan timeout yang lebih lama
+          qrMaxRetries: 5,
+          authTimeoutMs: 60000,
         });
 
         this.clients[userId] = client;
@@ -164,12 +179,27 @@ export class WhatsappService {
         this.handleMessage(client);
         this.handleDisconnected(client, userId);
 
-        client.initialize();
+        client
+          .initialize()
+          .then(() => {
+            this.logger.log(`Client ${userId} initialized successfully`);
+            this.clients.set(userId, client);
+            resolve(client);
+          })
+          .catch((error) => {
+            console.error(`Failed to initialize client ${userId}:`, error);
+            reject(error instanceof Error ? error : new Error(String(error)));
+          })
+          .finally(() => {
+            this.clientPromises.delete(userId);
+          });
+
         this.clients.set(userId, client);
 
         // this.clients[userId] = client;
         resolve(client);
       } catch (error) {
+        this.logger.error(`Failed to initialize client ${userId}:`, error);
         reject(error instanceof Error ? error : new Error(String(error)));
       } finally {
         this.clientPromises.delete(userId); // Hapus promise setelah selesai
@@ -234,72 +264,79 @@ export class WhatsappService {
 
   private handleReady(client: Client, userId: string) {
     client.on('ready', async () => {
-      const waId = client.info.wid._serialized;
+      try {
+        const waId = client.info.wid._serialized;
 
-      await this.whatsappInstanceRepository.update(
-        { uuid: userId },
-        {
-          status: 'CONNECTED',
-          waId,
-          clientInfo: JSON.parse(JSON.stringify(client.info)),
-          lastConnected: new Date(),
-        },
-      );
+        await this.whatsappInstanceRepository.update(
+          { uuid: userId },
+          {
+            status: 'CONNECTED',
+            waId,
+            clientInfo: JSON.parse(JSON.stringify(client.info)),
+            lastConnected: new Date(),
+          },
+        );
 
-      const user = await this.userRepository.findOne({ where: { waId } });
+        const user = await this.userRepository.findOne({ where: { waId } });
 
-      if (user) {
-        // await this.createClient(user.id.toString());
-        this.io.emit(`login_success-${userId}`, {
-          waId,
-          user,
-          token: this.generateJwt(user),
-          redirect: '/dashboard',
-        });
-      } else {
-        // Generate & simpan OTP untuk waId
-        const otpRecord = await this.otpRepository
-          .findOne({
-            where: [{ waId, status: 'PENDING' }],
-          })
-          .then(async (otpCode) => {
-            if (!otpCode) return null;
-
-            if (otpCode?.expiresAt < new Date()) {
-              await this.otpRepository.delete({ waId });
-            }
-            return null;
+        if (user) {
+          // await this.createClient(user.id.toString());
+          this.io.emit(`login_success-${userId}`, {
+            waId,
+            user,
+            token: this.generateJwt(user),
+            redirect: '/dashboard',
           });
-
-        if (!otpRecord) {
-          const otp = OtpHelper.generateOtp();
-          this.logger.log(`OTP: ${otp}`);
-
-          await this.otpRepository
-            .save({
-              otpCode: otp,
-              waId,
-              status: 'PENDING',
-              expiresAt: OtpHelper.getExpiry(),
+        } else {
+          // Generate & simpan OTP untuk waId
+          const otpRecord = await this.otpRepository
+            .findOne({
+              where: [{ waId, status: 'PENDING' }],
             })
-            .catch((err) => {
-              console.log({ err });
+            .then(async (otpCode) => {
+              if (!otpCode) return null;
+
+              if (otpCode?.expiresAt < new Date()) {
+                await this.otpRepository.delete({ waId });
+              }
+              return null;
             });
 
-          // Kirim OTP via WhatsApp
-          await client.sendMessage(waId, `Your OTP Code Verification: ${otp}`);
+          if (!otpRecord) {
+            const otp = OtpHelper.generateOtp();
+            this.logger.log(`OTP: ${otp}`);
 
-          this.io.emit(`unlinked_whatsapp-${userId}`, {
-            waId,
-            uuid: userId,
-            message: 'Please verify your WhatsApp number to continue',
-          });
+            await this.otpRepository
+              .save({
+                otpCode: otp,
+                waId,
+                status: 'PENDING',
+                expiresAt: OtpHelper.getExpiry(),
+              })
+              .catch((err) => {
+                console.log({ err });
+              });
+
+            // Kirim OTP via WhatsApp
+            await client.sendMessage(
+              waId,
+              `Your OTP Code Verification: ${otp}`,
+            );
+
+            this.io.emit(`unlinked_whatsapp-${userId}`, {
+              waId,
+              uuid: userId,
+              message: 'Please verify your WhatsApp number to continue',
+            });
+          }
         }
-      }
 
-      this.logger.log(`WhatsApp client for ${userId} is ready!`);
-      if (this.io) {
-        this.io.emit('ready', { userId });
+        this.logger.log(`WhatsApp client for ${userId} is ready!`);
+        if (this.io) {
+          this.io.emit('ready', { userId });
+        }
+      } catch (error) {
+        this.logger.error(`Error in ready handler for ${userId}:`, error);
       }
     });
   }
@@ -363,6 +400,20 @@ export class WhatsappService {
       );
 
       delete this.clients[userId];
+
+      // Optional: Coba reconnect secara otomatis setelah delay
+      if (reason !== 'LOGOUT' && reason !== 'CONFLICT') {
+        this.logger.log(
+          `Attempting to reconnect client ${userId} in 30 seconds...`,
+        );
+        setTimeout(async () => {
+          try {
+            await this.initializeClient(userId);
+          } catch (error) {
+            this.logger.error(`Failed to reconnect client ${userId}:`, error);
+          }
+        }, 30000);
+      }
     });
   }
 
