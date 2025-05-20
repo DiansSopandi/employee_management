@@ -131,9 +131,17 @@ export class AuthService {
     const { id, email, roles } = user;
     const token = await this.getTokens(id.toString(), email, roles);
 
-    await this.whatsappService.destroyClient(body.uuid);
-    this.whatsappService.renameSession(body.uuid, user.id.toString());
-    await this.whatsappService.createClient(user.id.toString());
+    // await new Promise((resolve) => setTimeout(resolve, 2000)); // 1 detik
+
+    // const tempClient = this.whatsappService.clients.get(body.uuid);
+    // if (tempClient) {
+    //   await this.whatsappService.destroyClient(body.uuid);
+    // }
+
+    // this.whatsappService.renameSession(body.uuid, user.id.toString());
+    // if (!this.whatsappService.clients.has(user.id.toString())) {
+    //   await this.whatsappService.createClient(user.id.toString());
+    // }
 
     return {
       user,
@@ -186,9 +194,10 @@ export class AuthService {
       { status: 'VERIFIED' },
     );
 
-    await this.whatsappService.destroyClient(userId);
-    this.whatsappService.renameSession(userId, user.id.toString());
-    await this.whatsappService.createClient(user.id.toString());
+    // await new Promise((resolve) => setTimeout(resolve, 2000)); // 1 detik
+    // await this.whatsappService.destroyClient(userId);
+    // this.whatsappService.renameSession(userId, user.id.toString());
+    // await this.whatsappService.createClient(user.id.toString());
 
     this.auditService.logChange(
       'Otp',
@@ -209,6 +218,9 @@ export class AuthService {
 
   async whatsappLogout(userId: string) {
     try {
+      const tempClient = this.whatsappService.clients.get(userId);
+      if (!tempClient) return;
+
       return await this.whatsappService.logout(userId);
     } catch (error) {
       this.logger.error('Error in whatsappLogout:', error);
