@@ -170,6 +170,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         await this.cleanupSessionFiles(userId);
 
         // Restart the client
+        this.qrThrottleService.resetCooldown(userId);
         await this.startClient(userId);
       } catch (error) {
         this.logger.error(
@@ -321,6 +322,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     const sessionPath = path.join(this.SESSION_BASE_PATH, `session-${userId}`);
 
     const clientOptions: ClientOptions = {
+      authStrategy: new LocalAuth({ clientId: userId }),
       puppeteer: {
         headless: true,
         args: [
@@ -711,10 +713,12 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
     try {
       // Check if directory exists
-      await fs.access(sessionPath).catch(() => {
-        /* Directory doesn't exist, nothing to clean */
-      });
+      const isSessionUser = await fs
+        .access(sessionPath)
+        .then(() => true)
+        .catch(() => false);
 
+      if (!isSessionUser) return;
       // On Windows, try to force close Chrome processes first
       // if (process.platform === 'win32') {
       //   try {
