@@ -19,6 +19,7 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { log } from 'winston';
 import { CreateAuthWhatsappDto } from './dto/create-auth-whatsapp.dto';
 import { Session } from 'inspector/promises';
+import { RolesEntity } from '../roles/entities/role.entity';
 
 @Injectable()
 export class AuthService {
@@ -68,7 +69,7 @@ export class AuthService {
     return this.usersService.findById(id);
   }
 
-  async getTokens(id: string, email: string, role?: string[]) {
+  async getTokens(id: string, email: string, role?: RolesEntity[]) {
     const jwtPayload = {
       sub: id,
       email: email,

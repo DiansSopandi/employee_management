@@ -1,4 +1,4 @@
-import { ROLES } from '@app/commons';
+import { Role } from '@app/commons';
 import {
   CanActivate,
   ExecutionContext,
@@ -12,7 +12,7 @@ export class RoleGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<ROLES[]>('roles', [
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>('roles', [
       context.getClass(),
       context.getHandler(),
     ]);

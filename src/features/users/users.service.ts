@@ -8,7 +8,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersEntity } from './entities/user.entity';
-import { Repository, FindManyOptions, ILike } from 'typeorm';
+import { Repository, FindManyOptions, ILike, In } from 'typeorm';
 import { PasswordUtils } from 'src/utils/password.utils';
 import { CreateAuthenticateDto } from '../auth/dto/create-auth.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
@@ -19,12 +19,15 @@ import {
   IPaginateResponse,
 } from 'src/utils/paginate-response.utils';
 import { buildFindOptions } from 'src/utils/build-find-option.utils';
+import { RolesEntity } from '../roles/entities/role.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UsersEntity)
     private readonly usersRepository: Repository<UsersEntity>,
+    @InjectRepository(RolesEntity)
+    private readonly rolesRepository: Repository<RolesEntity>,
     private readonly logger: Logger,
   ) {
     this.logger = new Logger(UsersService.name);
@@ -49,12 +52,18 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    const { password } = createUserDto;
+    const { password, roles, ...rest } = createUserDto;
     const hashPassword = await PasswordUtils.hashPassword(password);
+
+    const roleEntities = await this.rolesRepository.findBy({
+      name: In(roles.map((role) => role.toUpperCase())),
+    });
+
     const userWithHashPassword = {
-      ...createUserDto,
+      ...rest,
       email: createUserDto.email.toLowerCase(),
       password: hashPassword,
+      roles: roleEntities,
     };
 
     const userExists = await this.usersRepository.findOneBy({

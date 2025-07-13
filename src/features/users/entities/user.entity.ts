@@ -1,7 +1,7 @@
-import { Column, Entity, OneToOne } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToOne } from 'typeorm';
 import Base from '@app/commons/base-entities/base.entity';
-import { ROLES } from '@app/commons/constants/enums';
 import { WhatsAppSessionEntity } from 'src/features/sessions/entities/session.entity';
+import { RolesEntity } from 'src/features/roles/entities/role.entity';
 
 @Entity('users')
 export class UsersEntity extends Base {
@@ -50,15 +50,29 @@ export class UsersEntity extends Base {
   })
   isActive: boolean;
 
-  @Column({
-    name: 'roles',
-    type: 'enum',
-    enum: ROLES,
-    array: true,
-    nullable: false,
-    default: [ROLES.USER],
+  // @Column({
+  //   name: 'roles',
+  //   type: 'enum',
+  //   enum: Role,
+  //   array: true,
+  //   nullable: false,
+  //   default: [Role.USER],
+  // })
+  // roles: Role[];
+
+  @ManyToMany(() => RolesEntity)
+  @JoinTable({
+    name: 'user_roles',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'role_id',
+      referencedColumnName: 'id',
+    },
   })
-  roles: ROLES[];
+  roles: RolesEntity[];
 
   @OneToOne(() => WhatsAppSessionEntity, (session) => session.user)
   session: WhatsAppSessionEntity;

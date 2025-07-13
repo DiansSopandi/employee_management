@@ -7,7 +7,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { ROLES } from '@app/commons/constants/enums';
+import { Role } from '@app/commons/constants/enums';
 import { IsStrongPassword } from 'src/utils/decorators/password.decorator';
 
 export class CreateUserDto {
@@ -30,14 +30,14 @@ export class CreateUserDto {
   })
   password: string;
 
-  @ApiPropertyOptional({ enum: ROLES, isArray: true, default: [ROLES.USER] })
-  @IsEnum(ROLES, {
+  @ApiPropertyOptional({ enum: Role, isArray: true, default: [Role.USER] })
+  @IsEnum(Role, {
     each: true,
-    message: `Roles must be one of the following: ${Object.values(ROLES).join(
+    message: `Roles must be one of the following: ${Object.values(Role).join(
       ', ',
     )}`,
   })
   @IsOptional()
   @IsArray()
-  roles: ROLES[] = [ROLES.USER];
+  roles: Role[] = [Role.USER];
 }
