@@ -1,5 +1,5 @@
 // users/utils/build-find-options.ts
-import { FindManyOptions, ILike } from 'typeorm';
+import { FindManyOptions, ILike, IsNull, Not } from 'typeorm';
 import { parseSort } from './parse-sort.utils';
 
 interface BuildFindOptionsParams<T> {
@@ -12,6 +12,8 @@ interface BuildFindOptionsParams<T> {
   searchableFields?: (keyof T)[];
   select?: FindManyOptions<T>['select'];
   relations?: FindManyOptions<T>['relations'];
+  where?: FindManyOptions<T>['where'];
+  onlyWithRoles?: boolean;
 }
 
 export function buildFindOptions<T>({
@@ -19,24 +21,41 @@ export function buildFindOptions<T>({
   filter,
   searchableFields = [],
   relations,
+  where: additionalWhere = {},
+  onlyWithRoles = false,
 }: BuildFindOptionsParams<T>): FindManyOptions<T> {
   const { page = 0, pageSize = 10, fullSearch, sort } = filter;
+
   const trimFullSearch = fullSearch?.trim();
-  // Handle search
-  let where: any = {};
-  if (trimFullSearch && searchableFields.length > 0) {
-    where = searchableFields.map((field) => ({
-      [field]: ILike(`%${fullSearch}%`),
-    }));
+  let where: any = additionalWhere || {};
+
+  if (onlyWithRoles) {
+    console.warn(
+      'onlyWithRoles filter requires Query Builder, not findAndCount',
+    );
+    throw new Error(
+      'onlyWithRoles filter requires Query Builder. Use buildUserQueryWithRoles instead.',
+    );
+  }
+  if (onlyWithRoles) {
+    where.roles = Not(IsNull());
   }
 
-  // Handle sort
-  //   const order: FindManyOptions<T>['order'] = {};
-  //   sort?.split(',').forEach((field) => {
-  //     const direction = field.startsWith('-') ? 'DESC' : 'ASC';
-  //     const key = field.replace(/^[-+]/, '') as keyof T;
-  //     order[key] = direction as any;
-  //   });
+  if (trimFullSearch && searchableFields.length > 0) {
+    const searchConditions = searchableFields.map((field) => ({
+      [field]: ILike(`%${trimFullSearch}%`),
+    }));
+
+    if (onlyWithRoles) {
+      where = searchConditions.map((condition) => ({
+        ...condition,
+        roles: Not(IsNull()),
+      }));
+    } else {
+      where = searchableFields;
+    }
+  }
+
   const order = parseSort(sort) as FindManyOptions<T>['order'];
 
   return {

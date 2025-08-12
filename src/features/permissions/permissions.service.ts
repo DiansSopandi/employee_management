@@ -29,7 +29,25 @@ export class PermissionsService {
   }
 
   findAll() {
-    return `This action returns all permissions`;
+    return this.permissionsRepository
+      .find({
+        select: ['id', 'resource', 'action', 'createdAt'],
+        order: {
+          resource: 'ASC',
+          action: 'ASC',
+          createdAt: 'DESC',
+        },
+      })
+      .then((permissions) => {
+        return {
+          success: true,
+          message: 'Permissions retrieved successfully',
+          data: permissions,
+        };
+      })
+      .catch((error) => {
+        throw new Error(`Failed to retrieve permissions: ${error.message}`);
+      });
   }
 
   findOne(id: number) {

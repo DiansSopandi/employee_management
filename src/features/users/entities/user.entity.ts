@@ -30,21 +30,26 @@ export class UsersEntity extends Base {
   })
   password: string;
 
-  @Column({ unique: true, type: 'varchar', nullable: true })
+  @Column({
+    name: 'phone_number',
+    unique: true,
+    type: 'varchar',
+    nullable: true,
+  })
   phoneNumber: string;
 
-  @Column({ unique: true, type: 'varchar', nullable: true })
+  @Column({ name: 'wa_id', unique: true, type: 'varchar', nullable: true })
   waId: string;
 
   @Column({
-    name: 'emailVerificationCode',
+    name: 'email_verification_code',
     type: 'varchar',
     nullable: true,
   })
   emailVerificationCode: string;
 
   @Column({
-    name: 'isActive',
+    name: 'is_active',
     type: 'boolean',
     default: false,
   })

@@ -34,7 +34,25 @@ export class RolesService {
   }
 
   findAll() {
-    return `This action returns all roles`;
+    return this.rolesRepository
+      .find({
+        select: ['id', 'name', 'description', 'createdAt'],
+        relations: ['permissions'], // Include permissions in the response
+        order: {
+          name: 'ASC', // Order by role name
+          createdAt: 'DESC', // Order by creation date
+        },
+      })
+      .then((roles) => {
+        return {
+          success: true,
+          message: 'Roles retrieved successfully',
+          data: roles,
+        };
+      })
+      .catch((error) => {
+        throw new Error(`Failed to retrieve roles: ${error.message}`);
+      });
   }
 
   findOne(id: number) {

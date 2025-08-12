@@ -8,7 +8,13 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersEntity } from './entities/user.entity';
-import { Repository, FindManyOptions, ILike, In } from 'typeorm';
+import {
+  Repository,
+  FindManyOptions,
+  ILike,
+  In,
+  IsNull as TypeOrmIsNull,
+} from 'typeorm';
 import { PasswordUtils } from 'src/utils/password.utils';
 import { CreateAuthenticateDto } from '../auth/dto/create-auth.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
@@ -20,6 +26,7 @@ import {
 } from 'src/utils/paginate-response.utils';
 import { buildFindOptions } from 'src/utils/build-find-option.utils';
 import { RolesEntity } from '../roles/entities/role.entity';
+import { buildUserQueryBuilderWithRoles } from 'src/utils/build-query-builder';
 
 @Injectable()
 export class UsersService {
@@ -55,9 +62,12 @@ export class UsersService {
     const { password, roles, ...rest } = createUserDto;
     const hashPassword = await PasswordUtils.hashPassword(password);
 
-    const roleEntities = await this.rolesRepository.findBy({
-      name: In(roles.map((role) => role.toUpperCase())),
-    });
+    const newRoles = roles ?? ['USER'];
+    const roleEntities = newRoles.length
+      ? await this.rolesRepository.findBy({
+          name: In(newRoles.map((role) => role.toUpperCase())),
+        })
+      : [];
 
     const userWithHashPassword = {
       ...rest,
@@ -96,48 +106,49 @@ export class UsersService {
 
   async findAll(
     filter: FilterUserDto,
-  ): Promise<IPaginateResponse<UsersEntity>> {
+  ): Promise<
+    IPaginateResponse<{ id: any; username: any; email: any; roles: any[] }>
+  > {
     const { page = 0, pageSize = 10, sort, fullSearch } = filter;
-
-    // const [data, total] = await this.usersRepository.findAndCount({
+    // const options = buildFindOptions<UsersEntity>({
     //   select: {
     //     id: true,
     //     username: true,
     //     email: true,
-    //     roles: true, // Assuming you have a relation called 'roles' in your entity
+    //     roles: true,
     //   },
-    //   where: fullSearch
-    //     ? [
-    //         { username: ILike(`%${fullSearch}%`) },
-    //         { email: ILike(`%${fullSearch}%`) },
-    //       ]
-    //     : {},
-    //   order: parseSort(sort),
-    //   skip: page * pageSize,
-    //   take: pageSize,
-    //   // relations: {
-    //   //   roles: true, // Assuming you have a relation called 'roles' in your entity
-    //   // },
+    //   relations: {
+    //     roles: true,
+    //   },
+    //   filter,
+    //   searchableFields: ['username', 'email'],
+    //   where: { deletedAt: IsNull() },
+    //   onlyWithRoles: true,
     // });
+    // const [data, total] = await this.usersRepository.findAndCount(options);
 
-    const options = buildFindOptions<UsersEntity>({
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        roles: true,
+    const queryBuilder = buildUserQueryBuilderWithRoles({
+      repository: this.usersRepository,
+      filter: {
+        page,
+        pageSize,
+        fullSearch,
+        sort,
       },
-      filter,
       searchableFields: ['username', 'email'],
-      // relations: {
-      //   roles: true,
-      // },
+      select: ['user.id', 'user.username', 'user.email'],
+      onlyWithRoles: true,
     });
-
-    const [data, total] = await this.usersRepository.findAndCount(options);
+    const [data, total] = await queryBuilder.getManyAndCount();
+    const transformedData = data.map((user) => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      roles: user.roles?.map((role) => role.name) || [],
+    }));
 
     return paginateResponseWithMeta(
-      data,
+      transformedData,
       total,
       Number(page),
       Number(pageSize),
@@ -214,4 +225,9 @@ export class UsersService {
   remove(id: number) {
     return `This action removes a #${id} user`;
   }
+}
+
+// Implementation of IsNull function
+function IsNull(): import('typeorm').FindOperator<Date> {
+  return TypeOrmIsNull();
 }
