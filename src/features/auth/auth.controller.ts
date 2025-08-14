@@ -53,9 +53,11 @@ export class AuthController {
     req.res.setHeader('Authorization', `Bearer ${bearerToken}`);
 
     createAuthenticateDto['id'] = req.user.id;
+
     return {
       id: createAuthenticateDto['id'],
       email: createAuthenticateDto['email'],
+      roles: roles.map((r) => ({ id: r.id, name: r.name })),
       accessToken: bearerToken,
     };
   }

@@ -55,8 +55,11 @@ export class RolesService {
       });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} role`;
+  async findOne(id: number) {
+    return await this.rolesRepository
+      .findOneBy({ id })
+      .then((res) => res)
+      .catch((err) => err);
   }
 
   update(id: number, updateRoleDto: UpdateRoleDto) {

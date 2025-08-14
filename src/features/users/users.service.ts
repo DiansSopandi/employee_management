@@ -110,23 +110,6 @@ export class UsersService {
     IPaginateResponse<{ id: any; username: any; email: any; roles: any[] }>
   > {
     const { page = 0, pageSize = 10, sort, fullSearch } = filter;
-    // const options = buildFindOptions<UsersEntity>({
-    //   select: {
-    //     id: true,
-    //     username: true,
-    //     email: true,
-    //     roles: true,
-    //   },
-    //   relations: {
-    //     roles: true,
-    //   },
-    //   filter,
-    //   searchableFields: ['username', 'email'],
-    //   where: { deletedAt: IsNull() },
-    //   onlyWithRoles: true,
-    // });
-    // const [data, total] = await this.usersRepository.findAndCount(options);
-
     const queryBuilder = buildUserQueryBuilderWithRoles({
       repository: this.usersRepository,
       filter: {
@@ -160,6 +143,7 @@ export class UsersService {
   async findById(id: number): Promise<UsersEntity> {
     const user = await this.usersRepository.findOne({
       where: { id },
+      relations: ['roles'],
     });
 
     if (!user) {
@@ -171,9 +155,9 @@ export class UsersService {
 
   async findOne(id: number) {
     return await this.usersRepository
-      .findBy({ id })
+      .findOne({ where: { id }, relations: ['roles'] })
       .then((res) => {
-        return res.length
+        return res
           ? {
               success: true,
               message: `User #${id} found`,
@@ -200,6 +184,7 @@ export class UsersService {
     const { email, password } = loginDto;
     const user = await this.usersRepository.findOne({
       where: { email: email.toLowerCase() },
+      relations: ['roles'],
     });
 
     if (!user) return null;
