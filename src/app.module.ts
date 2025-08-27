@@ -12,11 +12,13 @@ import { EmployeeConsumer } from './features/employees/employee.consumer';
 import { RedisCacheModule } from '@app/commons';
 import { AuditTrailModule } from './audit-trail/audit-trail.module';
 import { SessionsModule } from './features/sessions/sessions.module';
+import { RateLimiterModule } from './rate-limiter/rate-limiter.module';
+import { CustomThrottlerGuard } from './guards/custom-throttler.guard';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
     RedisCacheModule,
-    AuditTrailModule,
     ConfigModule.forRoot({
       envFilePath: '.env',
       expandVariables: true,
@@ -26,8 +28,6 @@ import { SessionsModule } from './features/sessions/sessions.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // return configService.get<TypeOrmModuleOptions>('database');
-
         const dbConfig = configService.get<TypeOrmModuleOptions>('database');
         if (!dbConfig) {
           throw new Error('Database configuration is missing!');
@@ -36,10 +36,15 @@ import { SessionsModule } from './features/sessions/sessions.module';
       },
       inject: [ConfigService],
     }),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'secret',
+      signOptions: { expiresIn: '1h' },
+    }),
     FeaturesModule,
     LoggerModule,
     AuditTrailModule,
     SessionsModule,
+    RateLimiterModule,
   ],
   controllers: [AppController],
   providers: [
@@ -49,6 +54,10 @@ import { SessionsModule } from './features/sessions/sessions.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
     },
     EmployeeConsumer,
   ],

@@ -16,11 +16,10 @@ import { CreateAuthenticateDto } from './dto/create-auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from 'src/utils/decorators/public.decorator';
-import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { CreateAuthWhatsappDto } from './dto/create-auth-whatsapp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { ac } from '@faker-js/faker/dist/airline-CBNP41sR';
+import { StrictRateLimit } from 'src/decorators/rate-limiter.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -34,6 +33,7 @@ export class AuthController {
 
   @Public()
   @UseGuards(LocalAuthGuard)
+  @StrictRateLimit()
   @Post('login')
   async login(
     @Req() req,

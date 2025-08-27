@@ -20,6 +20,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest();
 
     const url = [
+      '/v1',
       '/v1/auth/login',
       '/v1/auth/whatsapp-login',
       '/v1/whatsapp/qr',
