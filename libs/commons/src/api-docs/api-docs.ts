@@ -13,7 +13,15 @@ export class ApiDocs {
       .setTitle(appName)
       .setDescription(appDescription)
       .setVersion(appVersion)
-      .addBearerAuth()
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          in: 'header',
+        },
+        'access-token',
+      )
       .build();
     const document = SwaggerModule.createDocument(app, config);
     const options = {

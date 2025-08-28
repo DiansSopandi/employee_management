@@ -8,6 +8,7 @@ import {
   ThrottlerModuleOptions,
   ThrottlerStorage,
 } from '@nestjs/throttler';
+import { decode } from 'punycode';
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
@@ -72,13 +73,22 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
     // Skip untuk admin users
     const token = request.headers.authorization?.replace('Bearer ', '');
+
     if (token) {
       try {
         const decoded = this.jwtService.decode(token) as any;
-        if (
-          decoded?.role === 'admin' ||
-          decoded?.permissions?.includes('bypass_rate_limit')
-        ) {
+
+        // if (
+        //   decoded?.role === 'ADMIN' ||
+        //   decoded?.permissions?.includes('bypass_rate_limit')
+        // ) {
+        //   return true;
+        // }
+
+        if (decoded?.role?.some((r: any) => r.name === 'ADMIN')) {
+          return true;
+        }
+        if (decoded?.permissions?.includes('bypass_rate_limit')) {
           return true;
         }
       } catch (error) {
@@ -91,6 +101,6 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   protected async getErrorMessage(): Promise<string> {
-    return 'Rate limit exceeded. Please try again later.';
+    return 'Rate limit exceeded. Please try again later.1';
   }
 }

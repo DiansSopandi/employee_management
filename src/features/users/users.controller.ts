@@ -13,7 +13,10 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from 'src/utils/decorators/public.decorator';
 import { FilterUserDto } from './dto/filter-user.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { StrictRateLimit } from 'src/decorators/rate-limiter.decorator';
 
+@ApiBearerAuth('access-token')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -29,6 +32,7 @@ export class UsersController {
     return this.usersService.register(newUserDto);
   }
 
+  @StrictRateLimit()
   @Get()
   findAll(@Query() filter: FilterUserDto) {
     return this.usersService.findAll(filter);

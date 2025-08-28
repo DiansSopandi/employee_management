@@ -19,6 +19,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     ]);
     const request = context.switchToHttp().getRequest();
 
+    // console.log(
+    //   '>>> JwtAuthGuard triggered, header:',
+    //   request.headers.authorization,
+    // );
     const url = [
       '/v1',
       '/v1/auth/login',
