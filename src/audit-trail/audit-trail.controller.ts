@@ -8,7 +8,7 @@ import { AuditLogQueryDto } from './dto/audit-log-query.dto';
 
 @EmployeeApi('Audit Logs')
 @Controller('audit-trail')
-@Roles('admin')
+@Roles('admin', 'superadmin')
 @UseGuards(AuthGuard, RoleGuard) // Protect with authentication & role guard
 export class AuditTrailController {
   constructor(private readonly auditService: AuditTrailService) {}
@@ -19,7 +19,7 @@ export class AuditTrailController {
   @Get()
   async getAuditLogs(@Query() query: AuditLogQueryDto) {
     const { userId, action, entity, startDate, endDate, page, limit } = query;
-    return this.auditService.getAuditLogs({
+    return await this.auditService.getAuditLogs({
       userId,
       action,
       entity,

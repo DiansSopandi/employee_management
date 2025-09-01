@@ -4,6 +4,7 @@ export enum Role {
   AGENT = 'AGENT',
   SALES = 'SALES',
   MARKETING = 'MARKETING',
+  SUPERADMIN = 'SUPERADMIN',
 }
 
 export enum Action {
