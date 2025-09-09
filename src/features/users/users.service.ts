@@ -184,7 +184,8 @@ export class UsersService {
     const { email, password } = loginDto;
     const user = await this.usersRepository.findOne({
       where: { email: email.toLowerCase() },
-      relations: ['roles'],
+      // relations: ['roles'],
+      relations: ['roles', 'roles.permissions'],
     });
 
     if (!user) return null;

@@ -57,8 +57,16 @@ export class AuthController {
     return {
       id: createAuthenticateDto['id'],
       email: createAuthenticateDto['email'],
-      roles: roles.map((r) => ({ id: r.id, name: r.name })),
       accessToken: bearerToken,
+      roles: roles.map((role) => ({
+        id: role.id,
+        name: role.name,
+        permissions: role.permissions.map((permission) => ({
+          id: permission.id,
+          resource: permission.resource,
+          action: permission.action,
+        })),
+      })),
     };
   }
 
