@@ -26,7 +26,8 @@ export class WhatsappMultiAccountService {
 
     client.on('qr', (qr) => {
       this.logger.log(`QR Code Generated for ${userId}`);
-      this.io.emit(`qr:${userId}`, qr);
+      if (this.io) this.io.emit(`qr:${userId}`, qr);
+      // if (this.io) this.io.emit(`qr:${userId}`, qr);
     });
 
     client.on('authenticated', () => {

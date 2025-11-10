@@ -204,8 +204,67 @@ export class UsersService {
     return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user ${JSON.stringify(updateUserDto)}`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    try {
+      const user = await this.usersRepository.findOne({
+        where: { id },
+        relations: ['roles'],
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+
+      const { username, email, roles } = updateUserDto;
+
+      if (username) user.username = username;
+      if (email) user.email = email.toLowerCase();
+
+      if (roles && Array.isArray(roles)) {
+        const roleEntities = await this.rolesRepository.findBy({
+          name: In(roles.map((role) => role.toUpperCase())),
+        });
+
+        if (roleEntities.length === 0) {
+          throw new HttpException(
+            'One or more roles not found in database',
+            400,
+          );
+        }
+
+        const existingRoles = user.roles || [];
+        const mergedRoles = [
+          ...existingRoles,
+          ...roleEntities.filter(
+            (newRole) => !existingRoles.some((r) => r.id === newRole.id),
+          ),
+        ];
+
+        user.roles = mergedRoles;
+      }
+
+      const updatedUser = await this.usersRepository.save(user);
+
+      return {
+        success: true,
+        message: `User #${id} updated successfully`,
+        data: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          roles: updatedUser.roles.map((r) => r.name),
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Error updating user #${id}: ${error.message}`);
+
+      if (error instanceof NotFoundException) throw error;
+
+      throw new HttpException(
+        `Failed to update user #${id}: ${error.message}`,
+        400,
+      );
+    }
   }
 
   remove(id: number) {

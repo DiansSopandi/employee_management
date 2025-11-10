@@ -271,8 +271,12 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         const qrCodePromise = new Promise<string>((resolve, reject) => {
           // Set a timeout in case QR event never fires
           const timeout = setTimeout(() => {
-            reject(new Error('QR code generation timeout'));
-          }, 30000);
+            try {
+              reject(new Error('QR code generation timeout'));
+            } catch (error) {
+              return { success: false, message: error.message };
+            }
+          }, 60000);
 
           client.once('qr', (qrCode) => {
             clearTimeout(timeout);
@@ -302,10 +306,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
           this.eventEmitter.emit('whatsapp.qr', { userId, qrCode });
           return { success: true, qrCode };
         } catch (error) {
+          this.logger.warn(
+            `QR promise rejected for ${userId}: ${error.message}`,
+          );
           if (error.message === 'Client authenticated directly') {
             return { success: true, message: 'Client authenticated directly' };
           }
-          throw error;
+          return { success: false, message: error.message };
+          // throw error;
         }
       } catch (error) {
         this.logger.error(
